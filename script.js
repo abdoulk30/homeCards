@@ -66,37 +66,51 @@ function attachDeleteHandlers() {
   const deleteButtons = document.querySelectorAll(".delete-btn");
 
   deleteButtons.forEach(button => {
-    button.addEventListener("click", function () {
+    // Remove old click handlers first
+    button.onclick = null;
+
+    // Attach new click handler
+    button.onclick = function () {
       const id = Number(this.dataset.id);
 
-      apartments = apartments.filter(apartment => apartment.id !== id);
+      const confirmed = confirm("Are you sure you want to delete this apartment?");
+      if (!confirmed) return;
+
+      apartments = apartments.filter(a => a.id !== id);
       localStorage.setItem("apartments", JSON.stringify(apartments));
 
       renderApartments(apartments);
-    });
+    };
   });
 }
+
 
 function attachEditHandlers() {
   const editButtons = document.querySelectorAll(".edit-btn");
 
   editButtons.forEach(button => {
-    button.addEventListener("click", function () {
+    // Remove any previous click handler
+    button.onclick = null;
+
+    // Attach new click handler
+    button.onclick = function () {
       const id = Number(this.dataset.id);
       const apartment = apartments.find(a => a.id === id);
 
+      // Fill form with apartment data
       document.getElementById("address").value = apartment.address;
       document.getElementById("rent").value = apartment.rent;
       document.getElementById("broker").value = apartment.broker;
       document.getElementById("phone").value = apartment.phone;
       document.getElementById("notes").value = apartment.notes;
 
+      // Set editing state
       editingId = id;
-
       form.querySelector("button").textContent = "Update Apartment";
-    });
+    };
   });
 }
+
 
 
 renderApartments(apartments);

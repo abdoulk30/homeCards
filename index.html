@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>HomeCards</title>
+        <link rel="stylesheet" href="style.css" />
+    </head>
+
+    <body>
+        <div class="app">
+            <h1>HomeCards</h1>
+            <p>Track apartments in one place.</p>
+
+            <form id="apartment-form">
+            <input type="text" id="address" placeholder="Address" required />
+            <input type="number" id="rent" placeholder="Monthly Rent" />
+            <input type="text" id="broker" placeholder="Broker / Landlord Name" />
+            <input type="tel" id="phone" placeholder="Phone Number" />
+            <textarea id="notes" placeholder="Notes"></textarea>
+            <input type="file" id="photo" accept="image/*" />
+            <button type="submit">Add Apartment</button>
+            </form>
+
+            <input type="text" id="search" placeholder="Search by address or broker" />
+
+            <div id="cards-container"></div>
+        </div>
+
+        <script src="script.js"></script>
+    </body>
+</html>
+

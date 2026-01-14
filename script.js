@@ -3,29 +3,37 @@ const cardsContainer = document.getElementById("cards-container");
 const searchInput = document.getElementById("search");
 
 let apartments = JSON.parse(localStorage.getItem("apartments")) || [];
+let editingId = null;
+
 
 form.addEventListener("submit", function (e) {
   e.preventDefault();
 
-  const photoInput = document.getElementById("photo");
-  const file = photoInput.files[0];
-
-  const apartment = {
-    id: Date.now(),
+  const apartmentData = {
+    id: editingId || Date.now(),
     address: document.getElementById("address").value,
     rent: document.getElementById("rent").value,
     broker: document.getElementById("broker").value,
     phone: document.getElementById("phone").value,
     notes: document.getElementById("notes").value,
-    photo: file ? URL.createObjectURL(file) : ""
+    photo: ""
   };
 
-  apartments.push(apartment);
-  localStorage.setItem("apartments", JSON.stringify(apartments));
+  if (editingId) {
+    apartments = apartments.map(a =>
+      a.id === editingId ? apartmentData : a
+    );
+    editingId = null;
+    form.querySelector("button").textContent = "Add Apartment";
+  } else {
+    apartments.push(apartmentData);
+  }
 
-  form.reset();
+  localStorage.setItem("apartments", JSON.stringify(apartments));
   renderApartments(apartments);
+  form.reset();
 });
+
 
 function renderApartments(list) {
   cardsContainer.innerHTML = "";
@@ -41,12 +49,14 @@ function renderApartments(list) {
       <p><strong>Phone:</strong> ${apartment.phone}</p>
       <p>${apartment.notes}</p>
       ${apartment.photo ? `<img src="${apartment.photo}" />` : ""}
-      <button class="delete-btn" data-id="${apartment.id}">
-        Delete
-      </button>
+      <button class="edit-btn" data-id="${apartment.id}">Edit</button>
+      <button class="delete-btn" data-id="${apartment.id}">Delete</button>
     `;
 
     cardsContainer.appendChild(card);
+
+    attachEditHandlers();
+    attachDeleteHandlers();
   });
 
   attachDeleteHandlers();
@@ -63,6 +73,27 @@ function attachDeleteHandlers() {
       localStorage.setItem("apartments", JSON.stringify(apartments));
 
       renderApartments(apartments);
+    });
+  });
+}
+
+function attachEditHandlers() {
+  const editButtons = document.querySelectorAll(".edit-btn");
+
+  editButtons.forEach(button => {
+    button.addEventListener("click", function () {
+      const id = Number(this.dataset.id);
+      const apartment = apartments.find(a => a.id === id);
+
+      document.getElementById("address").value = apartment.address;
+      document.getElementById("rent").value = apartment.rent;
+      document.getElementById("broker").value = apartment.broker;
+      document.getElementById("phone").value = apartment.phone;
+      document.getElementById("notes").value = apartment.notes;
+
+      editingId = id;
+
+      form.querySelector("button").textContent = "Update Apartment";
     });
   });
 }

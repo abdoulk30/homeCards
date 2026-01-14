@@ -41,11 +41,32 @@ function renderApartments(list) {
       <p><strong>Phone:</strong> ${apartment.phone}</p>
       <p>${apartment.notes}</p>
       ${apartment.photo ? `<img src="${apartment.photo}" />` : ""}
+      <button class="delete-btn" data-id="${apartment.id}">
+        Delete
+      </button>
     `;
 
     cardsContainer.appendChild(card);
   });
+
+  attachDeleteHandlers();
 }
+
+function attachDeleteHandlers() {
+  const deleteButtons = document.querySelectorAll(".delete-btn");
+
+  deleteButtons.forEach(button => {
+    button.addEventListener("click", function () {
+      const id = Number(this.dataset.id);
+
+      apartments = apartments.filter(apartment => apartment.id !== id);
+      localStorage.setItem("apartments", JSON.stringify(apartments));
+
+      renderApartments(apartments);
+    });
+  });
+}
+
 
 renderApartments(apartments);
 

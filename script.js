@@ -28,7 +28,13 @@ form.addEventListener("submit", function (e) {
   e.preventDefault();
 
   const photoInput = document.getElementById("photo");
-  const file = photoInput.files[0]; // grab the file
+  const file = photoInput.files[0];
+
+  // if editing and no new file is chosen, keep the old photo
+  const photoURL = file
+    ? URL.createObjectURL(file)
+    : (editingId ? apartments.find(a => a.id === editingId).photo : "");
+
 
   const apartmentData = {
     id: editingId || Date.now(),
@@ -37,7 +43,7 @@ form.addEventListener("submit", function (e) {
     broker: document.getElementById("broker").value,
     phone: document.getElementById("phone").value,
     notes: document.getElementById("notes").value,
-    photo: file ? URL.createObjectURL(file) : "" // convert file to URL
+    photo: photoURL
   };
 
   if (editingId) {
@@ -52,10 +58,11 @@ form.addEventListener("submit", function (e) {
 
   localStorage.setItem("apartments", JSON.stringify(apartments));
   renderApartments(apartments);
-  form.reset();
-  photoPreview.src = "";
-  photoPreview.style.display = "none";
-  photoPreviewContainer.style.display = "none";
+  form.reset();                      // clears all text fields and file input
+  photoPreview.src = "";              // clears the preview image
+  photoPreviewContainer.style.display = "none";  // hides the container
+  editingId = null;                   // exit edit mode
+  form.querySelector("button").textContent = "Add Apartment"; // reset button
 });
 
 
@@ -129,12 +136,37 @@ function attachEditHandlers() {
       document.getElementById("phone").value = apartment.phone;
       document.getElementById("notes").value = apartment.notes;
 
+      // Show previous photo in preview
+      photoPreview.src = apartment.photo || "";
+      photoPreviewContainer.style.display = apartment.photo ? "block" : "none";
+
       // Set editing state
       editingId = id;
       form.querySelector("button").textContent = "Update Apartment";
     };
   });
 }
+
+// --- File input change handler ---
+photoInput.addEventListener("change", function () {
+  const file = photoInput.files[0];
+  if (file) {
+    photoPreview.src = URL.createObjectURL(file);
+    photoPreviewContainer.style.display = "block";
+  } else {
+    // If editing and no new file selected, show previous photo
+    if (editingId) {
+      const apartment = apartments.find(a => a.id === editingId);
+      photoPreview.src = apartment.photo || "";
+      photoPreviewContainer.style.display = apartment.photo ? "block" : "none";
+    } else {
+      // If adding new apartment and no file selected, hide preview
+      photoPreview.src = "";
+      photoPreviewContainer.style.display = "none";
+    }
+  }
+});
+
 
 
 

@@ -9,7 +9,7 @@
 
     <body>
         <div class="app">
-            <h1>HomeCards</h1>
+            <h1 id="home-title">HomeCards</h1>
             <p>Track apartments in one place.</p>
 
             <form id="apartment-form">
@@ -19,7 +19,7 @@
             <input type="tel" id="phone" placeholder="Phone Number" />
             <textarea id="notes" placeholder="Notes"></textarea>
             <div class="photo-upload">
-                <label for="photo" class="photo-label">Add Photo</label>
+                <label for="photo" id="photo-label" class="photo-label">Add Photo</label>
                 <input type="file" id="photo" accept="image/*" />
                 <div class="photo-preview-container">
                     <img id="photo-preview" src="" alt="Photo Preview" />
@@ -32,6 +32,24 @@
             <input type="text" id="search" placeholder="Search by address or broker" />
 
             <div id="cards-container"></div>
+        </div>
+        <!-- Apartment Modal -->
+        <div id="modal-container" class="modal">
+            <div class="modal-content">
+                <span id="modal-close" class="modal-close">&times;</span>
+                <h2 id="modal-address"></h2>
+                <p><strong>Rent:</strong> <span id="modal-rent"></span></p>
+                <p><strong>Broker:</strong> <span id="modal-broker"></span></p>
+                <p><strong>Phone:</strong> <span id="modal-phone"></span></p>
+                <p><strong>Notes:</strong> <span id="modal-notes"></span></p>
+                <div class="modal-buttons">
+                    <button id="modal-edit">Edit</button>
+                    <button id="modal-delete">Delete</button>
+                </div>
+                <div class="modal-photo-container">
+                    <img id="modal-photo" alt="Apartment Photo" />
+                </div>
+            </div>
         </div>
 
         <script src="script.js"></script>

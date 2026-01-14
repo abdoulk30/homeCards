@@ -6,8 +6,29 @@ let apartments = JSON.parse(localStorage.getItem("apartments")) || [];
 let editingId = null;
 
 
+const photoInput = document.getElementById("photo");
+const photoPreview = document.getElementById("photo-preview");
+const photoPreviewContainer = document.querySelector(".photo-preview-container");
+
+
+photoInput.addEventListener("change", function () {
+  const file = photoInput.files[0];
+  if (file) {
+    photoPreview.src = URL.createObjectURL(file);
+    photoPreviewContainer.style.display = "block"; // show container with shadow
+  } else {
+    photoPreview.src = "";
+    photoPreviewContainer.style.display = "none"; // hide container
+  }
+});
+
+
+
 form.addEventListener("submit", function (e) {
   e.preventDefault();
+
+  const photoInput = document.getElementById("photo");
+  const file = photoInput.files[0]; // grab the file
 
   const apartmentData = {
     id: editingId || Date.now(),
@@ -16,7 +37,7 @@ form.addEventListener("submit", function (e) {
     broker: document.getElementById("broker").value,
     phone: document.getElementById("phone").value,
     notes: document.getElementById("notes").value,
-    photo: ""
+    photo: file ? URL.createObjectURL(file) : "" // convert file to URL
   };
 
   if (editingId) {
@@ -32,7 +53,11 @@ form.addEventListener("submit", function (e) {
   localStorage.setItem("apartments", JSON.stringify(apartments));
   renderApartments(apartments);
   form.reset();
+  photoPreview.src = "";
+  photoPreview.style.display = "none";
+  photoPreviewContainer.style.display = "none";
 });
+
 
 
 function renderApartments(list) {

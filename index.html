@@ -18,7 +18,15 @@
             <input type="text" id="broker" placeholder="Broker / Landlord Name" />
             <input type="tel" id="phone" placeholder="Phone Number" />
             <textarea id="notes" placeholder="Notes"></textarea>
-            <input type="file" id="photo" accept="image/*" />
+            <div class="photo-upload">
+                <label for="photo" class="photo-label">Add Photo</label>
+                <input type="file" id="photo" accept="image/*" />
+                <div class="photo-preview-container">
+                    <img id="photo-preview" src="" alt="Photo Preview" />
+                </div>
+            </div>
+
+
             <button type="submit">Add Apartment</button>
             </form>
 

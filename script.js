@@ -6,6 +6,44 @@ const photoPreview = document.getElementById("photo-preview");
 const photoPreviewContainer = document.querySelector(".photo-preview-container");
 const photoLabel = document.getElementById("photo-label");
 const homeTitle = document.getElementById("home-title");
+const phoneInput = document.getElementById("phone");
+
+/* ----------------- Phone formatting while typing ----------------- */
+phoneInput.addEventListener("input", () => {
+  let digits = phoneInput.value.replace(/\D/g, "");
+  if (digits.length > 10) digits = digits.slice(0, 10);
+
+  let formatted = digits;
+
+  if (digits.length >= 7) {
+    formatted = `${digits.slice(0,3)}-${digits.slice(3,6)}-${digits.slice(6)}`;
+  } else if (digits.length >= 4) {
+    formatted = `${digits.slice(0,3)}-${digits.slice(3)}`;
+  }
+
+  phoneInput.value = formatted;
+});
+
+/* ----------------- Only allow numbers and dashes ----------------- */
+phoneInput.addEventListener("keydown", (e) => {
+  const allowedKeys = [
+    "Backspace", "ArrowLeft", "ArrowRight", "Delete", "Tab",
+    "Home", "End"
+  ];
+
+  // Allow Ctrl/Cmd + A, C, V, X
+  if ((e.ctrlKey || e.metaKey) && ["a", "c", "v", "x"].includes(e.key.toLowerCase())) {
+    return;
+  }
+
+  if (allowedKeys.includes(e.key)) return;
+
+  // Allow digits and dash
+  if (!/[0-9-]/.test(e.key)) {
+    e.preventDefault();
+  }
+});
+
 
 let apartments = JSON.parse(localStorage.getItem("apartments")) || [];
 let editingId = null;
@@ -18,6 +56,14 @@ function openPhotoFullscreen(src) {
   photoModalImg.src = src;
   photoModal.style.display = "flex";
 }
+
+function formatPhone(phone) {
+  if (!phone) return "Not listed";
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length !== 10) return phone; // if not 10 digits, show raw
+  return `${digits.slice(0,3)}-${digits.slice(3,6)}-${digits.slice(6)}`;
+}
+
 
 /* ----------------- Photo input preview ----------------- */
 photoInput.addEventListener("change", () => {
@@ -50,6 +96,7 @@ form.addEventListener("submit", (e) => {
     address: document.getElementById("address").value,
     rent: document.getElementById("rent").value,
     broker: document.getElementById("broker").value,
+    landlord: document.getElementById("landlord").value,
     phone: document.getElementById("phone").value,
     notes: document.getElementById("notes").value,
     photo: photoURL
@@ -82,10 +129,11 @@ function renderApartments(list) {
 
     card.innerHTML = `
       <h3>${apartment.address}</h3>
-      <p><strong>Rent:</strong> $${apartment.rent}</p>
-      <p><strong>Broker:</strong> ${apartment.broker}</p>
-      <p><strong>Phone:</strong> ${apartment.phone}</p>
-      <p><strong>Notes:</strong> ${apartment.notes}</p>
+      <p><strong>Rent:</strong> $${apartment.rent || "Not listed"}</p>
+      <p><strong>Broker:</strong> ${apartment.broker || "Not listed"}</p>
+      <p><strong>Landlord:</strong> ${apartment.landlord || "Not listed"}</p>
+      <p><strong>Phone:</strong> ${formatPhone(apartment.phone)}</p>
+      <p><strong>Notes:</strong> ${apartment.notes || "Not listed"}</p>
       ${apartment.photo ? `<img src="${apartment.photo}" class="card-photo" />` : ""}
       <button class="view-btn" data-id="${apartment.id}">View Listing</button>
       <button class="edit-btn" data-id="${apartment.id}">Edit</button>
@@ -123,6 +171,7 @@ function attachEditHandlers() {
       document.getElementById("address").value = apartment.address;
       document.getElementById("rent").value = apartment.rent;
       document.getElementById("broker").value = apartment.broker;
+      document.getElementById("landlord").value = apartment.landlord;
       document.getElementById("phone").value = apartment.phone;
       document.getElementById("notes").value = apartment.notes;
 
@@ -157,11 +206,13 @@ function attachViewButtons() {
       const id = Number(btn.dataset.id);
       const apartment = apartments.find(a => a.id === id);
 
-      document.getElementById("modal-address").textContent = apartment.address;
-      document.getElementById("modal-rent").textContent = apartment.rent;
-      document.getElementById("modal-broker").textContent = apartment.broker;
-      document.getElementById("modal-phone").textContent = apartment.phone;
-      document.getElementById("modal-notes").textContent = apartment.notes;
+      document.getElementById("modal-address").textContent = apartment.address || "Not listed";
+      document.getElementById("modal-rent").textContent = apartment.rent || "Not listed";
+      document.getElementById("modal-broker").textContent = apartment.broker || "Not listed";
+      document.getElementById("modal-landlord").textContent = apartment.landlord || "Not listed";
+      document.getElementById("modal-phone").textContent = formatPhone(apartment.phone);
+      document.getElementById("modal-notes").textContent = apartment.notes || "Not listed";
+
 
       const modalPhoto = document.getElementById("modal-photo");
       modalPhoto.src = apartment.photo || "";
@@ -224,7 +275,8 @@ searchInput.addEventListener("input", () => {
   const query = searchInput.value.toLowerCase();
   const filtered = apartments.filter(a =>
     a.address.toLowerCase().includes(query) ||
-    a.broker.toLowerCase().includes(query)
+    a.broker.toLowerCase().includes(query) || 
+    a.landlord.toLowerCase().includes(query)
   );
   renderApartments(filtered);
 });

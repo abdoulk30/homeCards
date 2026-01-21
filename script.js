@@ -58,6 +58,43 @@ function openPhotoFullscreen(photos, index = 0) {
   photoModal.style.display = "flex";
 }
 
+function openPhotoFullscreen(srcArray, startIndex = 0) {
+  if (!srcArray || !srcArray.length) return;
+
+  const photoModal = document.getElementById("photo-modal");
+  const photoModalImg = document.getElementById("photo-modal-img");
+  const removeBtn = document.getElementById("fullscreen-remove-btn");
+
+  let currentIndex = startIndex;
+
+  const showImage = () => {
+    photoModalImg.src = srcArray[currentIndex];
+  };
+
+  showImage();
+  photoModal.style.display = "flex";
+
+  // remove photo from list
+  removeBtn.onclick = () => {
+    selectedPhotos.splice(currentIndex, 1);
+    selectedPhotoURLs.splice(currentIndex, 1);
+
+    // if no photos left close modal
+    if (!selectedPhotoURLs.length) {
+      photoModal.style.display = "none";
+      photoPreviewContainer.style.display = "none";
+      photoLabel.textContent = "Add Photos";
+      return;
+    }
+
+    // otherwise update the view
+    if (currentIndex >= selectedPhotoURLs.length) currentIndex = selectedPhotoURLs.length - 1;
+    showImage();
+    renderPhotoPreviews();
+  };
+}
+
+
 document.getElementById("fullscreen-prev").onclick = () => {
   fullscreenIndex = (fullscreenIndex - 1 + fullscreenPhotos.length) % fullscreenPhotos.length;
   document.getElementById("photo-modal-img").src = fullscreenPhotos[fullscreenIndex];
@@ -80,6 +117,32 @@ function formatPhone(phone) {
 let selectedPhotos = [];
 let selectedPhotoURLs = [];
 
+function renderPhotoPreviews() {
+  photoPreview.innerHTML = selectedPhotoURLs
+    .map((src, idx) => `
+      <div class="preview-wrapper">
+        <button class="remove-btn" data-index="${idx}">×</button>
+        <img src="${src}" class="preview-img" data-index="${idx}" />
+      </div>
+    `)
+    .join("");
+
+  document.querySelectorAll(".preview-img").forEach(img => {
+    img.onclick = () => openPhotoFullscreen(selectedPhotoURLs, Number(img.dataset.index));
+  });
+
+  document.querySelectorAll(".remove-btn").forEach(btn => {
+    btn.onclick = () => {
+      const idx = Number(btn.dataset.index);
+      selectedPhotos.splice(idx, 1);
+      selectedPhotoURLs.splice(idx, 1);
+
+      // Re-render preview after removal
+      renderPhotoPreviews();
+    };
+  });
+}
+
 photoInput.addEventListener("change", () => {
   const newFiles = Array.from(photoInput.files);
 
@@ -96,41 +159,12 @@ photoInput.addEventListener("change", () => {
   photoLabel.textContent = "Add Photos";
 
   // Render previews
-  photoPreview.innerHTML = selectedPhotoURLs
-  .map((src, idx) => `
-    <div class="preview-wrapper">
-      <button class="remove-btn" data-index="${idx}">×</button>
-      <img src="${src}" class="preview-img" data-index="${idx}" />
-    </div>
-  `)
-  .join("");
-
-
-  document.querySelectorAll(".preview-img").forEach(img => {
-    img.onclick = () => openPhotoFullscreen(selectedPhotoURLs, Number(img.dataset.index));
-  });
-
-  document.querySelectorAll(".remove-btn").forEach(btn => {
-  btn.onclick = () => {
-    const idx = Number(btn.dataset.index);
-    selectedPhotos.splice(idx, 1);
-    selectedPhotoURLs.splice(idx, 1);
-
-    // Re-render preview after removal
-    photoPreview.innerHTML = selectedPhotoURLs
-      .map((src, idx) => `
-        <div class="preview-wrapper">
-          <button class="remove-btn" data-index="${idx}">×</button>
-          <img src="${src}" class="preview-img" data-index="${idx}" />
-        </div>
-      `)
-      .join("");
-  };
-});
+  renderPhotoPreviews();
 
   // Reset file input so you can add the same photo again if needed
   photoInput.value = "";
 });
+
 
 
 /* ----------------- Form submit ----------------- */
@@ -151,7 +185,7 @@ form.addEventListener("submit", (e) => {
     landlord: document.getElementById("landlord").value,
     phone: document.getElementById("phone").value,
     notes: document.getElementById("notes").value,
-    photos: photoURLs
+    photos: selectedPhotoURLs
   };
 
   if (editingId) {
@@ -228,23 +262,22 @@ function attachEditHandlers() {
       document.getElementById("phone").value = apartment.phone;
       document.getElementById("notes").value = apartment.notes;
 
-      previewPhotos = apartment.photos || [];
-      photoPreview.innerHTML = previewPhotos
-        .map((src, idx) => `<img src="${src}" class="preview-img" data-index="${idx}" />`)
-        .join("");
+      // ---- FIXED MULTI PHOTO EDIT LOGIC ----
+      selectedPhotos = []; // keep files empty in edit mode
+      selectedPhotoURLs = apartment.photos ? [...apartment.photos] : [];
 
-      photoPreviewContainer.style.display = previewPhotos.length ? "block" : "none";
-      photoLabel.textContent = previewPhotos.length ? "Replace Photos" : "Add Photos";
+      photoPreviewContainer.style.display = selectedPhotoURLs.length ? "block" : "none";
+      photoLabel.textContent = selectedPhotoURLs.length ? "Add Photos" : "Add Photos";
 
-      document.querySelectorAll(".preview-img").forEach(img => {
-        img.onclick = () => openPhotoFullscreen(previewPhotos, Number(img.dataset.index));
-      });
+      renderPhotoPreviews();
 
       editingId = id;
       form.querySelector("button").textContent = "Update Apartment";
     };
   });
 }
+
+
 
 /* ----------------- Delete handlers ----------------- */
 function attachDeleteHandlers() {

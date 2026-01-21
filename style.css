@@ -147,20 +147,25 @@ form button:hover {
   display: inline-block;
 }
 
-.preview-wrapper .remove-btn {
+.remove-btn {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  background: rgba(255, 0, 0, 0.9);
-  color: white;
-  border: none;
-  border-radius: 50%;
+  top: 6px;
+  right: 6px;
   width: 22px;
   height: 22px;
-  font-size: 14px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   cursor: pointer;
-  z-index: 2;
+  font-size: 16px;
+  line-height: 1;
 }
+
+
 
 
 .photo-upload {

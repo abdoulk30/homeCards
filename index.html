@@ -1,65 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>HomeCards</title>
-        <link rel="stylesheet" href="style.css" />
-    </head>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HomeCards</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
 
-    <body>
-        <div class="app">
-            <h1 id="home-title">HomeCards</h1>
-            <p>Track apartments in one place.</p>
+<body>
+  <div class="app">
+    <h1 id="home-title">HomeCards</h1>
+    <p>Track apartments in one place.</p>
 
-            <form id="apartment-form">
-            <input type="text" id="address" placeholder="Address" required />
-            <input type="number" id="rent" placeholder="Monthly Rent" />
-            <input type="text" id="broker" placeholder="Broker Name" />
-            <input type="text" id="landlord" placeholder="Landlord Name" />
-            <input type="tel" id="phone" placeholder="Phone Number" />
-            <textarea id="notes" placeholder="Notes"></textarea>
-            <div class="photo-upload">
-                <label for="photo" id="photo-label" class="photo-label">Add Photo</label>
-                <input type="file" id="photo" accept="image/*" />
-                <div class="photo-preview-container">
-                    <img id="photo-preview" src="" alt="Photo Preview" />
-                </div>
-            </div>
+    <form id="apartment-form">
+      <input type="text" id="address" placeholder="Address" required />
+      <input type="number" id="rent" placeholder="Monthly Rent" />
+      <input type="text" id="broker" placeholder="Broker Name" />
+      <input type="text" id="landlord" placeholder="Landlord Name" />
+      <input type="tel" id="phone" placeholder="Phone Number" />
+      <textarea id="notes" placeholder="Notes"></textarea>
 
-            <button type="submit">Add Apartment</button>
-            </form>
-
-            <input type="text" id="search" placeholder="Search by address or broker" />
-
-            <div id="cards-container"></div>
+      <div class="photo-upload">
+        <label for="photo" id="photo-label" class="photo-label">Add Photos</label>
+        <input type="file" id="photo" accept="image/*" multiple />
+        <div class="photo-preview-container">
+            <div id="photo-preview"></div>
         </div>
-        <!-- Apartment Modal -->
-        <div id="modal-container" class="modal">
-            <div class="modal-content">
-                <span id="modal-close" class="modal-close">&times;</span>
-                <h2 id="modal-address"></h2>
-                <p><strong>Rent:</strong> <span id="modal-rent"></span></p>
-                <p><strong>Broker:</strong> <span id="modal-broker"></span></p>
-                <p><strong>Landlord:</strong> <span id="modal-landlord"></span></p>
-                <p><strong>Phone:</strong> <span id="modal-phone"></span></p>
-                <p><strong>Notes:</strong> <span id="modal-notes"></span></p>
-                <div class="modal-buttons">
-                    <button id="modal-edit">Edit</button>
-                    <button id="modal-delete">Delete</button>
-                </div>
-                <div class="modal-photo-container">
-                    <img id="modal-photo" alt="Apartment Photo" />
-                </div>
-            </div>
-        </div>
-        <div id="photo-modal" class="modal">
-            <span id="photo-modal-close" class="modal-close">&times;</span>
-            <img id="photo-modal-img" src="" alt="Full Screen Photo" />
-        </div>
+      </div>
 
 
-        <script src="script.js"></script>
-    </body>
+      <button type="submit">Add Apartment</button>
+    </form>
+
+    <input type="text" id="search" placeholder="Search by address or broker" />
+
+    <div id="cards-container"></div>
+  </div>
+
+  <!-- Apartment Modal -->
+  <div id="modal-container" class="modal">
+    <div class="modal-content">
+      <span id="modal-close" class="modal-close">&times;</span>
+      <h2 id="modal-address"></h2>
+      <p><strong>Rent:</strong> <span id="modal-rent"></span></p>
+      <p><strong>Broker:</strong> <span id="modal-broker"></span></p>
+      <p><strong>Landlord:</strong> <span id="modal-landlord"></span></p>
+      <p><strong>Phone:</strong> <span id="modal-phone"></span></p>
+      <p><strong>Notes:</strong> <span id="modal-notes"></span></p>
+
+      <div class="modal-buttons">
+        <button id="modal-edit">Edit</button>
+        <button id="modal-delete">Delete</button>
+      </div>
+
+      <div class="modal-photo-container">
+        <button id="modal-prev" class="photo-arrow">&lt;</button>
+        <img id="modal-photo" alt="Apartment Photo" />
+        <button id="modal-next" class="photo-arrow">&gt;</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fullscreen Photo Modal -->
+  <div id="photo-modal" class="modal">
+    <span id="photo-modal-close" class="modal-close">&times;</span>
+    <button id="fullscreen-prev" class="photo-arrow fullscreen-arrow">&lt;</button>
+    <img id="photo-modal-img" src="" alt="Full Screen Photo" />
+    <button id="fullscreen-next" class="photo-arrow fullscreen-arrow">&gt;</button>
+  </div>
+
+  <script src="script.js"></script>
+</body>
 </html>
-

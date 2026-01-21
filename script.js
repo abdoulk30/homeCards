@@ -8,13 +8,15 @@ const photoLabel = document.getElementById("photo-label");
 const homeTitle = document.getElementById("home-title");
 const phoneInput = document.getElementById("phone");
 
+let apartments = JSON.parse(localStorage.getItem("apartments")) || [];
+let editingId = null;
+
 /* ----------------- Phone formatting while typing ----------------- */
 phoneInput.addEventListener("input", () => {
   let digits = phoneInput.value.replace(/\D/g, "");
   if (digits.length > 10) digits = digits.slice(0, 10);
 
   let formatted = digits;
-
   if (digits.length >= 7) {
     formatted = `${digits.slice(0,3)}-${digits.slice(3,6)}-${digits.slice(6)}`;
   } else if (digits.length >= 4) {
@@ -31,65 +33,115 @@ phoneInput.addEventListener("keydown", (e) => {
     "Home", "End"
   ];
 
-  // Allow Ctrl/Cmd + A, C, V, X
   if ((e.ctrlKey || e.metaKey) && ["a", "c", "v", "x"].includes(e.key.toLowerCase())) {
     return;
   }
 
   if (allowedKeys.includes(e.key)) return;
-
-  // Allow digits and dash
-  if (!/[0-9-]/.test(e.key)) {
-    e.preventDefault();
-  }
+  if (!/[0-9-]/.test(e.key)) e.preventDefault();
 });
 
-
-let apartments = JSON.parse(localStorage.getItem("apartments")) || [];
-let editingId = null;
-
 /* ----------------- FULLSCREEN PHOTO HELPER ----------------- */
-function openPhotoFullscreen(src) {
-  if (!src) return;
+let fullscreenPhotos = [];
+let fullscreenIndex = 0;
+
+function openPhotoFullscreen(photos, index = 0) {
+  if (!photos || photos.length === 0) return;
+
+  fullscreenPhotos = photos;
+  fullscreenIndex = index;
+
   const photoModal = document.getElementById("photo-modal");
   const photoModalImg = document.getElementById("photo-modal-img");
-  photoModalImg.src = src;
+
+  photoModalImg.src = photos[index];
   photoModal.style.display = "flex";
 }
+
+document.getElementById("fullscreen-prev").onclick = () => {
+  fullscreenIndex = (fullscreenIndex - 1 + fullscreenPhotos.length) % fullscreenPhotos.length;
+  document.getElementById("photo-modal-img").src = fullscreenPhotos[fullscreenIndex];
+};
+
+document.getElementById("fullscreen-next").onclick = () => {
+  fullscreenIndex = (fullscreenIndex + 1) % fullscreenPhotos.length;
+  document.getElementById("photo-modal-img").src = fullscreenPhotos[fullscreenIndex];
+};
 
 function formatPhone(phone) {
   if (!phone) return "Not listed";
   const digits = phone.replace(/\D/g, "");
-  if (digits.length !== 10) return phone; // if not 10 digits, show raw
+  if (digits.length !== 10) return phone;
   return `${digits.slice(0,3)}-${digits.slice(3,6)}-${digits.slice(6)}`;
 }
 
 
-/* ----------------- Photo input preview ----------------- */
+/* ----------------- Photo input preview (MULTI PHOTO) ----------------- */
+let selectedPhotos = [];
+let selectedPhotoURLs = [];
+
 photoInput.addEventListener("change", () => {
-  const file = photoInput.files[0];
-  if (file) {
-    photoPreview.src = URL.createObjectURL(file);
-    photoPreviewContainer.style.display = "block";
-    photoLabel.textContent = "Replace Photo";
-  } else {
-    photoPreview.src = "";
-    photoPreviewContainer.style.display = "none";
-    photoLabel.textContent = "Add Photo";
-  }
+  const newFiles = Array.from(photoInput.files);
+
+  // Append new files to existing list
+  selectedPhotos = selectedPhotos.concat(newFiles);
+
+  // Update preview URLs
+  selectedPhotoURLs = selectedPhotos.map(file => URL.createObjectURL(file));
+
+  // Show preview container
+  photoPreviewContainer.style.display = selectedPhotoURLs.length ? "block" : "none";
+
+  // Always show "Add Photos"
+  photoLabel.textContent = "Add Photos";
+
+  // Render previews
+  photoPreview.innerHTML = selectedPhotoURLs
+  .map((src, idx) => `
+    <div class="preview-wrapper">
+      <button class="remove-btn" data-index="${idx}">×</button>
+      <img src="${src}" class="preview-img" data-index="${idx}" />
+    </div>
+  `)
+  .join("");
+
+
+  document.querySelectorAll(".preview-img").forEach(img => {
+    img.onclick = () => openPhotoFullscreen(selectedPhotoURLs, Number(img.dataset.index));
+  });
+
+  document.querySelectorAll(".remove-btn").forEach(btn => {
+  btn.onclick = () => {
+    const idx = Number(btn.dataset.index);
+    selectedPhotos.splice(idx, 1);
+    selectedPhotoURLs.splice(idx, 1);
+
+    // Re-render preview after removal
+    photoPreview.innerHTML = selectedPhotoURLs
+      .map((src, idx) => `
+        <div class="preview-wrapper">
+          <button class="remove-btn" data-index="${idx}">×</button>
+          <img src="${src}" class="preview-img" data-index="${idx}" />
+        </div>
+      `)
+      .join("");
+  };
 });
 
-photoPreview.style.cursor = "pointer";
-photoPreview.onclick = () => openPhotoFullscreen(photoPreview.src);
+  // Reset file input so you can add the same photo again if needed
+  photoInput.value = "";
+});
+
 
 /* ----------------- Form submit ----------------- */
 form.addEventListener("submit", (e) => {
   e.preventDefault();
 
-  const file = photoInput.files[0];
-  const photoURL = file
-    ? URL.createObjectURL(file)
-    : (editingId ? apartments.find(a => a.id === editingId).photo : "");
+  const files = selectedPhotos;
+
+  const photoURLs = files.length
+    ? files.map(file => URL.createObjectURL(file))
+    : (editingId ? apartments.find(a => a.id === editingId).photos : []);
 
   const apartmentData = {
     id: editingId || Date.now(),
@@ -99,7 +151,7 @@ form.addEventListener("submit", (e) => {
     landlord: document.getElementById("landlord").value,
     phone: document.getElementById("phone").value,
     notes: document.getElementById("notes").value,
-    photo: photoURL
+    photos: photoURLs
   };
 
   if (editingId) {
@@ -114,9 +166,10 @@ form.addEventListener("submit", (e) => {
   renderApartments(apartments);
 
   form.reset();
-  photoPreview.src = "";
+  photoPreview.innerHTML = "";
   photoPreviewContainer.style.display = "none";
-  photoLabel.textContent = "Add Photo";
+  photoLabel.textContent = "Add Photos";
+  photoInput.value = "";
 });
 
 /* ----------------- Render apartments ----------------- */
@@ -127,6 +180,10 @@ function renderApartments(list) {
     const card = document.createElement("div");
     card.className = "card";
 
+    const photoHtml = apartment.photos && apartment.photos.length
+      ? `<img src="${apartment.photos[0]}" class="card-photo" />`
+      : "";
+
     card.innerHTML = `
       <h3>${apartment.address}</h3>
       <p><strong>Rent:</strong> $${apartment.rent || "Not listed"}</p>
@@ -134,7 +191,7 @@ function renderApartments(list) {
       <p><strong>Landlord:</strong> ${apartment.landlord || "Not listed"}</p>
       <p><strong>Phone:</strong> ${formatPhone(apartment.phone)}</p>
       <p><strong>Notes:</strong> ${apartment.notes || "Not listed"}</p>
-      ${apartment.photo ? `<img src="${apartment.photo}" class="card-photo" />` : ""}
+      ${photoHtml}
       <button class="view-btn" data-id="${apartment.id}">View Listing</button>
       <button class="edit-btn" data-id="${apartment.id}">Edit</button>
       <button class="delete-btn" data-id="${apartment.id}">Delete</button>
@@ -151,13 +208,9 @@ function renderApartments(list) {
 /* ----------------- Card photo fullscreen (delegated) ----------------- */
 document.body.addEventListener("click", (e) => {
   if (e.target.classList.contains("card-photo")) {
-    openPhotoFullscreen(e.target.src);
-  }
-});
-
-document.body.addEventListener("mouseover", (e) => {
-  if (e.target.classList.contains("card-photo")) {
-    e.target.style.cursor = "pointer";
+    const id = Number(e.target.closest(".card").querySelector(".view-btn").dataset.id);
+    const apartment = apartments.find(a => a.id === id);
+    openPhotoFullscreen(apartment.photos, 0);
   }
 });
 
@@ -175,9 +228,17 @@ function attachEditHandlers() {
       document.getElementById("phone").value = apartment.phone;
       document.getElementById("notes").value = apartment.notes;
 
-      photoPreview.src = apartment.photo || "";
-      photoPreviewContainer.style.display = apartment.photo ? "block" : "none";
-      photoLabel.textContent = apartment.photo ? "Replace Photo" : "Add Photo";
+      previewPhotos = apartment.photos || [];
+      photoPreview.innerHTML = previewPhotos
+        .map((src, idx) => `<img src="${src}" class="preview-img" data-index="${idx}" />`)
+        .join("");
+
+      photoPreviewContainer.style.display = previewPhotos.length ? "block" : "none";
+      photoLabel.textContent = previewPhotos.length ? "Replace Photos" : "Add Photos";
+
+      document.querySelectorAll(".preview-img").forEach(img => {
+        img.onclick = () => openPhotoFullscreen(previewPhotos, Number(img.dataset.index));
+      });
 
       editingId = id;
       form.querySelector("button").textContent = "Update Apartment";
@@ -200,6 +261,14 @@ function attachDeleteHandlers() {
 }
 
 /* ----------------- View listing modal ----------------- */
+let modalPhotos = [];
+let modalIndex = 0;
+
+function updateModalPhoto() {
+  const modalPhoto = document.getElementById("modal-photo");
+  modalPhoto.src = modalPhotos[modalIndex];
+}
+
 function attachViewButtons() {
   document.querySelectorAll(".view-btn").forEach(btn => {
     btn.onclick = () => {
@@ -213,11 +282,15 @@ function attachViewButtons() {
       document.getElementById("modal-phone").textContent = formatPhone(apartment.phone);
       document.getElementById("modal-notes").textContent = apartment.notes || "Not listed";
 
+      modalPhotos = apartment.photos || [];
+      modalIndex = 0;
 
-      const modalPhoto = document.getElementById("modal-photo");
-      modalPhoto.src = apartment.photo || "";
-      modalPhoto.style.cursor = "pointer";
-      modalPhoto.onclick = () => openPhotoFullscreen(modalPhoto.src);
+      if (modalPhotos.length > 0) {
+        updateModalPhoto();
+        document.getElementById("modal-photo").style.display = "block";
+      } else {
+        document.getElementById("modal-photo").style.display = "none";
+      }
 
       document.getElementById("modal-container").style.display = "flex";
 
@@ -225,12 +298,21 @@ function attachViewButtons() {
         document.getElementById("address").value = apartment.address;
         document.getElementById("rent").value = apartment.rent;
         document.getElementById("broker").value = apartment.broker;
+        document.getElementById("landlord").value = apartment.landlord;
         document.getElementById("phone").value = apartment.phone;
         document.getElementById("notes").value = apartment.notes;
 
-        photoPreview.src = apartment.photo || "";
-        photoPreviewContainer.style.display = apartment.photo ? "block" : "none";
-        photoLabel.textContent = apartment.photo ? "Replace Photo" : "Add Photo";
+        previewPhotos = apartment.photos || [];
+        photoPreview.innerHTML = previewPhotos
+          .map((src, idx) => `<img src="${src}" class="preview-img" data-index="${idx}" />`)
+          .join("");
+
+        photoPreviewContainer.style.display = previewPhotos.length ? "block" : "none";
+        photoLabel.textContent = previewPhotos.length ? "Replace Photos" : "Add Photos";
+
+        document.querySelectorAll(".preview-img").forEach(img => {
+          img.onclick = () => openPhotoFullscreen(previewPhotos, Number(img.dataset.index));
+        });
 
         editingId = apartment.id;
         form.querySelector("button").textContent = "Update Apartment";
@@ -248,6 +330,18 @@ function attachViewButtons() {
     };
   });
 }
+
+document.getElementById("modal-prev").onclick = () => {
+  if (!modalPhotos.length) return;
+  modalIndex = (modalIndex - 1 + modalPhotos.length) % modalPhotos.length;
+  updateModalPhoto();
+};
+
+document.getElementById("modal-next").onclick = () => {
+  if (!modalPhotos.length) return;
+  modalIndex = (modalIndex + 1) % modalPhotos.length;
+  updateModalPhoto();
+};
 
 /* ----------------- Modal helpers ----------------- */
 function closeModal() {
@@ -275,7 +369,7 @@ searchInput.addEventListener("input", () => {
   const query = searchInput.value.toLowerCase();
   const filtered = apartments.filter(a =>
     a.address.toLowerCase().includes(query) ||
-    a.broker.toLowerCase().includes(query) || 
+    a.broker.toLowerCase().includes(query) ||
     a.landlord.toLowerCase().includes(query)
   );
   renderApartments(filtered);
@@ -285,9 +379,9 @@ searchInput.addEventListener("input", () => {
 homeTitle.style.cursor = "pointer";
 homeTitle.addEventListener("click", () => {
   form.reset();
-  photoPreview.src = "";
+  photoPreview.innerHTML = "";
   photoPreviewContainer.style.display = "none";
-  photoLabel.textContent = "Add Photo";
+  photoLabel.textContent = "Add Photos";
   editingId = null;
   form.querySelector("button").textContent = "Add Apartment";
   closeModal();

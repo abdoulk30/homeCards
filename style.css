@@ -335,3 +335,9 @@ form button:hover {
   justify-content: center;
   align-items: center;
 }
+
+.card-photo,
+#photo-preview,
+#modal-photo {
+  cursor: pointer;
+}

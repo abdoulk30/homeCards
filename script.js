@@ -10,29 +10,34 @@ const homeTitle = document.getElementById("home-title");
 let apartments = JSON.parse(localStorage.getItem("apartments")) || [];
 let editingId = null;
 
-// ----------------- Photo input preview -----------------
-photoInput.addEventListener("change", function () {
+/* ----------------- FULLSCREEN PHOTO HELPER ----------------- */
+function openPhotoFullscreen(src) {
+  if (!src) return;
+  const photoModal = document.getElementById("photo-modal");
+  const photoModalImg = document.getElementById("photo-modal-img");
+  photoModalImg.src = src;
+  photoModal.style.display = "flex";
+}
+
+/* ----------------- Photo input preview ----------------- */
+photoInput.addEventListener("change", () => {
   const file = photoInput.files[0];
   if (file) {
     photoPreview.src = URL.createObjectURL(file);
     photoPreviewContainer.style.display = "block";
     photoLabel.textContent = "Replace Photo";
   } else {
-    if (editingId) {
-      const apartment = apartments.find(a => a.id === editingId);
-      photoPreview.src = apartment.photo || "";
-      photoPreviewContainer.style.display = apartment.photo ? "block" : "none";
-      photoLabel.textContent = apartment.photo ? "Replace Photo" : "Add Photo";
-    } else {
-      photoPreview.src = "";
-      photoPreviewContainer.style.display = "none";
-      photoLabel.textContent = "Add Photo";
-    }
+    photoPreview.src = "";
+    photoPreviewContainer.style.display = "none";
+    photoLabel.textContent = "Add Photo";
   }
 });
 
-// ----------------- Form submit -----------------
-form.addEventListener("submit", function (e) {
+photoPreview.style.cursor = "pointer";
+photoPreview.onclick = () => openPhotoFullscreen(photoPreview.src);
+
+/* ----------------- Form submit ----------------- */
+form.addEventListener("submit", (e) => {
   e.preventDefault();
 
   const file = photoInput.files[0];
@@ -61,16 +66,13 @@ form.addEventListener("submit", function (e) {
   localStorage.setItem("apartments", JSON.stringify(apartments));
   renderApartments(apartments);
 
-  // Reset form
   form.reset();
   photoPreview.src = "";
   photoPreviewContainer.style.display = "none";
   photoLabel.textContent = "Add Photo";
-  editingId = null;
-  form.querySelector("button").textContent = "Add Apartment";
 });
 
-// ----------------- Render apartments -----------------
+/* ----------------- Render apartments ----------------- */
 function renderApartments(list) {
   cardsContainer.innerHTML = "";
 
@@ -93,13 +95,25 @@ function renderApartments(list) {
     cardsContainer.appendChild(card);
   });
 
-  // Attach handlers AFTER all cards exist
   attachEditHandlers();
   attachDeleteHandlers();
   attachViewButtons();
 }
 
-// ----------------- Edit handlers -----------------
+/* ----------------- Card photo fullscreen (delegated) ----------------- */
+document.body.addEventListener("click", (e) => {
+  if (e.target.classList.contains("card-photo")) {
+    openPhotoFullscreen(e.target.src);
+  }
+});
+
+document.body.addEventListener("mouseover", (e) => {
+  if (e.target.classList.contains("card-photo")) {
+    e.target.style.cursor = "pointer";
+  }
+});
+
+/* ----------------- Edit handlers ----------------- */
 function attachEditHandlers() {
   document.querySelectorAll(".edit-btn").forEach(btn => {
     btn.onclick = () => {
@@ -122,7 +136,7 @@ function attachEditHandlers() {
   });
 }
 
-// ----------------- Delete handlers -----------------
+/* ----------------- Delete handlers ----------------- */
 function attachDeleteHandlers() {
   document.querySelectorAll(".delete-btn").forEach(btn => {
     btn.onclick = () => {
@@ -136,7 +150,7 @@ function attachDeleteHandlers() {
   });
 }
 
-// ----------------- View listing handlers -----------------
+/* ----------------- View listing modal ----------------- */
 function attachViewButtons() {
   document.querySelectorAll(".view-btn").forEach(btn => {
     btn.onclick = () => {
@@ -148,11 +162,14 @@ function attachViewButtons() {
       document.getElementById("modal-broker").textContent = apartment.broker;
       document.getElementById("modal-phone").textContent = apartment.phone;
       document.getElementById("modal-notes").textContent = apartment.notes;
-      document.getElementById("modal-photo").src = apartment.photo || "";
+
+      const modalPhoto = document.getElementById("modal-photo");
+      modalPhoto.src = apartment.photo || "";
+      modalPhoto.style.cursor = "pointer";
+      modalPhoto.onclick = () => openPhotoFullscreen(modalPhoto.src);
 
       document.getElementById("modal-container").style.display = "flex";
 
-      // Modal Edit
       document.getElementById("modal-edit").onclick = () => {
         document.getElementById("address").value = apartment.address;
         document.getElementById("rent").value = apartment.rent;
@@ -166,14 +183,13 @@ function attachViewButtons() {
 
         editingId = apartment.id;
         form.querySelector("button").textContent = "Update Apartment";
-
         closeModal();
       };
 
-      // Modal Delete
       document.getElementById("modal-delete").onclick = () => {
         if (confirm("Are you sure you want to delete this apartment?")) {
           apartments = apartments.filter(a => a.id !== apartment.id);
+          localStorage.setItem("apartments", JSON.stringify(apartments));
           renderApartments(apartments);
           closeModal();
         }
@@ -182,39 +198,29 @@ function attachViewButtons() {
   });
 }
 
-// ----------------- Modal close helpers -----------------
+/* ----------------- Modal helpers ----------------- */
 function closeModal() {
   document.getElementById("modal-container").style.display = "none";
 }
 
 document.getElementById("modal-close").onclick = closeModal;
-document.getElementById("modal-container").onclick = e => {
+document.getElementById("modal-container").onclick = (e) => {
   if (e.target.id === "modal-container") closeModal();
 };
 
-// ----------------- Full screen photo modal -----------------
-document.body.addEventListener("click", (e) => {
-  // Use event delegation for all future .card-photo elements
-  if (e.target.classList.contains("card-photo")) {
-    const src = e.target.src;
-    const photoModal = document.getElementById("photo-modal");
-    const photoModalImg = document.getElementById("photo-modal-img");
-    photoModalImg.src = src;
-    photoModal.style.display = "flex";
-  }
-});
-
-
+/* ----------------- Fullscreen photo modal close ----------------- */
 document.getElementById("photo-modal-close").onclick = () => {
   document.getElementById("photo-modal").style.display = "none";
 };
 
-document.getElementById("photo-modal").onclick = e => {
-  if (e.target.id === "photo-modal") document.getElementById("photo-modal").style.display = "none";
+document.getElementById("photo-modal").onclick = (e) => {
+  if (e.target.id === "photo-modal") {
+    document.getElementById("photo-modal").style.display = "none";
+  }
 };
 
-// ----------------- Search -----------------
-searchInput.addEventListener("input", function () {
+/* ----------------- Search ----------------- */
+searchInput.addEventListener("input", () => {
   const query = searchInput.value.toLowerCase();
   const filtered = apartments.filter(a =>
     a.address.toLowerCase().includes(query) ||
@@ -223,7 +229,7 @@ searchInput.addEventListener("input", function () {
   renderApartments(filtered);
 });
 
-// ----------------- Reset to Add Apartment mode -----------------
+/* ----------------- Reset to Add Apartment ----------------- */
 homeTitle.style.cursor = "pointer";
 homeTitle.addEventListener("click", () => {
   form.reset();
@@ -235,5 +241,5 @@ homeTitle.addEventListener("click", () => {
   closeModal();
 });
 
-// ----------------- Initial render -----------------
+/* ----------------- Initial render ----------------- */
 renderApartments(apartments);

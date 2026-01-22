@@ -7,6 +7,7 @@ const photoPreviewContainer = document.querySelector(".photo-preview-container")
 const photoLabel = document.getElementById("photo-label");
 const homeTitle = document.getElementById("home-title");
 const phoneInput = document.getElementById("phone");
+const submitBtn = document.getElementById("submit-btn");
 
 let apartments = JSON.parse(localStorage.getItem("apartments")) || [];
 let editingId = null;
@@ -45,30 +46,18 @@ phoneInput.addEventListener("keydown", (e) => {
 let fullscreenPhotos = [];
 let fullscreenIndex = 0;
 
-function openPhotoFullscreen(photos, index = 0) {
-  if (!photos || photos.length === 0) return;
-
-  fullscreenPhotos = photos;
-  fullscreenIndex = index;
-
-  const photoModal = document.getElementById("photo-modal");
-  const photoModalImg = document.getElementById("photo-modal-img");
-
-  photoModalImg.src = photos[index];
-  photoModal.style.display = "flex";
-}
-
 function openPhotoFullscreen(srcArray, startIndex = 0) {
   if (!srcArray || !srcArray.length) return;
+
+  fullscreenPhotos = srcArray;
+  fullscreenIndex = startIndex;
 
   const photoModal = document.getElementById("photo-modal");
   const photoModalImg = document.getElementById("photo-modal-img");
   const removeBtn = document.getElementById("fullscreen-remove-btn");
 
-  let currentIndex = startIndex;
-
   const showImage = () => {
-    photoModalImg.src = srcArray[currentIndex];
+    photoModalImg.src = fullscreenPhotos[fullscreenIndex];
   };
 
   showImage();
@@ -76,24 +65,26 @@ function openPhotoFullscreen(srcArray, startIndex = 0) {
 
   // remove photo from list
   removeBtn.onclick = () => {
-    selectedPhotos.splice(currentIndex, 1);
-    selectedPhotoURLs.splice(currentIndex, 1);
+    selectedPhotos.splice(fullscreenIndex, 1);
+    selectedPhotoURLs.splice(fullscreenIndex, 1);
 
-    // if no photos left close modal
     if (!selectedPhotoURLs.length) {
       photoModal.style.display = "none";
       photoPreviewContainer.style.display = "none";
       photoLabel.textContent = "Add Photos";
+      submitBtn.textContent = "Add Apartment";
+      editingId = null;
       return;
     }
 
-    // otherwise update the view
-    if (currentIndex >= selectedPhotoURLs.length) currentIndex = selectedPhotoURLs.length - 1;
+    if (fullscreenIndex >= selectedPhotoURLs.length) {
+      fullscreenIndex = selectedPhotoURLs.length - 1;
+    }
+
     showImage();
     renderPhotoPreviews();
   };
 }
-
 
 document.getElementById("fullscreen-prev").onclick = () => {
   fullscreenIndex = (fullscreenIndex - 1 + fullscreenPhotos.length) % fullscreenPhotos.length;
@@ -111,7 +102,6 @@ function formatPhone(phone) {
   if (digits.length !== 10) return phone;
   return `${digits.slice(0,3)}-${digits.slice(3,6)}-${digits.slice(6)}`;
 }
-
 
 /* ----------------- Photo input preview (MULTI PHOTO) ----------------- */
 let selectedPhotos = [];
@@ -136,46 +126,44 @@ function renderPhotoPreviews() {
       const idx = Number(btn.dataset.index);
       selectedPhotos.splice(idx, 1);
       selectedPhotoURLs.splice(idx, 1);
-
-      // Re-render preview after removal
       renderPhotoPreviews();
     };
   });
 }
 
+function isDuplicateFile(file) {
+  return selectedPhotos.some(
+    existing =>
+      existing.name === file.name &&
+      existing.size === file.size &&
+      existing.lastModified === file.lastModified
+  );
+}
+
 photoInput.addEventListener("change", () => {
   const newFiles = Array.from(photoInput.files);
 
-  // Append new files to existing list
-  selectedPhotos = selectedPhotos.concat(newFiles);
+  newFiles.forEach(file => {
+    if (isDuplicateFile(file)) {
+      alert("You already added this photo!");
+      return;
+    }
 
-  // Update preview URLs
-  selectedPhotoURLs = selectedPhotos.map(file => URL.createObjectURL(file));
+    const url = URL.createObjectURL(file);
+    selectedPhotos.push(file);
+    selectedPhotoURLs.push(url);
+  });
 
-  // Show preview container
   photoPreviewContainer.style.display = selectedPhotoURLs.length ? "block" : "none";
-
-  // Always show "Add Photos"
   photoLabel.textContent = "Add Photos";
-
-  // Render previews
   renderPhotoPreviews();
-
-  // Reset file input so you can add the same photo again if needed
   photoInput.value = "";
 });
-
 
 
 /* ----------------- Form submit ----------------- */
 form.addEventListener("submit", (e) => {
   e.preventDefault();
-
-  const files = selectedPhotos;
-
-  const photoURLs = files.length
-    ? files.map(file => URL.createObjectURL(file))
-    : (editingId ? apartments.find(a => a.id === editingId).photos : []);
 
   const apartmentData = {
     id: editingId || Date.now(),
@@ -189,9 +177,9 @@ form.addEventListener("submit", (e) => {
   };
 
   if (editingId) {
-    apartments = apartments.map(a => a.id === editingId ? apartmentData : a);
-    editingId = null;
-    form.querySelector("button").textContent = "Add Apartment";
+    apartments = apartments.map(a =>
+      a.id === editingId ? apartmentData : a
+    );
   } else {
     apartments.push(apartmentData);
   }
@@ -199,11 +187,15 @@ form.addEventListener("submit", (e) => {
   localStorage.setItem("apartments", JSON.stringify(apartments));
   renderApartments(apartments);
 
+  // ---------- reset form ----------
   form.reset();
   photoPreview.innerHTML = "";
   photoPreviewContainer.style.display = "none";
   photoLabel.textContent = "Add Photos";
   photoInput.value = "";
+
+  editingId = null;
+  submitBtn.textContent = "Add Apartment";
 });
 
 /* ----------------- Render apartments ----------------- */
@@ -267,17 +259,15 @@ function attachEditHandlers() {
       selectedPhotoURLs = apartment.photos ? [...apartment.photos] : [];
 
       photoPreviewContainer.style.display = selectedPhotoURLs.length ? "block" : "none";
-      photoLabel.textContent = selectedPhotoURLs.length ? "Add Photos" : "Add Photos";
+      photoLabel.textContent = "Add Photos";
 
       renderPhotoPreviews();
 
       editingId = id;
-      form.querySelector("button").textContent = "Update Apartment";
+      submitBtn.textContent = "Update Apartment";
     };
   });
 }
-
-
 
 /* ----------------- Delete handlers ----------------- */
 function attachDeleteHandlers() {
@@ -328,28 +318,8 @@ function attachViewButtons() {
       document.getElementById("modal-container").style.display = "flex";
 
       document.getElementById("modal-edit").onclick = () => {
-        document.getElementById("address").value = apartment.address;
-        document.getElementById("rent").value = apartment.rent;
-        document.getElementById("broker").value = apartment.broker;
-        document.getElementById("landlord").value = apartment.landlord;
-        document.getElementById("phone").value = apartment.phone;
-        document.getElementById("notes").value = apartment.notes;
-
-        previewPhotos = apartment.photos || [];
-        photoPreview.innerHTML = previewPhotos
-          .map((src, idx) => `<img src="${src}" class="preview-img" data-index="${idx}" />`)
-          .join("");
-
-        photoPreviewContainer.style.display = previewPhotos.length ? "block" : "none";
-        photoLabel.textContent = previewPhotos.length ? "Replace Photos" : "Add Photos";
-
-        document.querySelectorAll(".preview-img").forEach(img => {
-          img.onclick = () => openPhotoFullscreen(previewPhotos, Number(img.dataset.index));
-        });
-
-        editingId = apartment.id;
-        form.querySelector("button").textContent = "Update Apartment";
         closeModal();
+        document.querySelector(`.edit-btn[data-id="${apartment.id}"]`).click();
       };
 
       document.getElementById("modal-delete").onclick = () => {
@@ -416,7 +386,7 @@ homeTitle.addEventListener("click", () => {
   photoPreviewContainer.style.display = "none";
   photoLabel.textContent = "Add Photos";
   editingId = null;
-  form.querySelector("button").textContent = "Add Apartment";
+  submitBtn.textContent = "Add Apartment";
   closeModal();
 });
 

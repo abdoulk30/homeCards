@@ -62,6 +62,10 @@ function openPhotoFullscreen(srcArray, startIndex = 0) {
 
   showImage();
   photoModal.style.display = "flex";
+// Only show arrows if more than 1 photo
+  document.getElementById("fullscreen-prev").style.display = srcArray.length > 1 ? "block" : "none";
+  document.getElementById("fullscreen-next").style.display = srcArray.length > 1 ? "block" : "none";
+
 
   // remove photo from list
   removeBtn.onclick = () => {
